@@ -312,10 +312,11 @@ Projection Camera3D::get_camera_projection() const {
 
 Vector4 Camera3D::_get_near_clip_plane() const {
 	Transform3D transform = get_global_transform();
-	int dot = int(near_plane_normal.dot(near_plane_position - transform.origin) >= 0.0f ? 1.0f : -1.0f);
+	real_t side = near_plane_normal.dot(near_plane_position - transform.origin);
+	int dot = int(Math::abs(side) < 0.001f ? 1.0f : (side >= 0.0f ? 1.0f : -1.0f));
 	Vector3 cam_space_pos = transform.xform_inv(near_plane_position);
 	Vector3 cam_space_normal = transform.basis.xform_inv(near_plane_normal) * dot;
-	real_t cam_space_dst = -cam_space_pos.dot(cam_space_normal) + _near;
+	real_t cam_space_dst = -cam_space_pos.dot(cam_space_normal);
 
 	return Vector4(cam_space_normal.x, cam_space_normal.y, cam_space_normal.z, cam_space_dst);
 }

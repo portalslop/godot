@@ -168,10 +168,11 @@ Vector4 RendererSceneCull::get_camera_near_clip_plane(RID p_camera) {
 	Camera *camera = camera_owner.get_or_null(p_camera);
 	ERR_FAIL_NULL_V(camera, Vector4());
 
-	int dot = int(camera->near_plane_normal.dot(camera->near_plane_position - camera->transform.origin) >= 0.0f ? 1.0f : -1.0f);
+	real_t side = camera->near_plane_normal.dot(camera->near_plane_position - camera->transform.origin);
+	int dot = int(Math::abs(side) < 0.001f ? 1.0f : (side >= 0.0f ? 1.0f : -1.0f));
 	Vector3 cam_space_pos = camera->transform.xform_inv(camera->near_plane_position);
 	Vector3 cam_space_normal = camera->transform.basis.xform_inv(camera->near_plane_normal) * dot;
-	real_t cam_space_dst = -cam_space_pos.dot(cam_space_normal) + camera->znear;
+	real_t cam_space_dst = -cam_space_pos.dot(cam_space_normal);
 
 	return Vector4(cam_space_normal.x, cam_space_normal.y, cam_space_normal.z, cam_space_dst);
 }

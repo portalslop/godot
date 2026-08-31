@@ -210,13 +210,12 @@
 		</member>
 		<member name="near" type="float" setter="set_near" getter="get_near" default="0.05">
 			The distance to the near culling boundary for this camera relative to its local Z axis. Lower values allow the camera to see objects more up close to its origin, at the cost of lower precision across the [i]entire[/i] range. Values lower than the default can lead to increased Z-fighting.
-			If [member near_plane_normal] is set, this is instead an offset of the custom near clip plane along its normal.
 		</member>
 		<member name="near_plane_normal" type="Vector3" setter="set_near_plane_normal" getter="get_near_plane_normal" default="Vector3(0, 0, 0)">
 			World-space normal of a custom near clip plane. If this is [constant Vector3.ZERO], the camera uses [member near].
 		</member>
 		<member name="near_plane_position" type="Vector3" setter="set_near_plane_position" getter="get_near_plane_position" default="Vector3(0, 0, 0)">
-			World-space point on the custom near clip plane. [member near] offsets this plane along [member near_plane_normal].
+			World-space point on the custom near clip plane.
 		</member>
 		<member name="projection" type="int" setter="set_projection" getter="get_projection" enum="Camera3D.ProjectionType" default="0">
 			The camera's projection mode. In [constant PROJECTION_PERSPECTIVE] mode, objects' Z distance from the camera's local space scales their perceived size.
