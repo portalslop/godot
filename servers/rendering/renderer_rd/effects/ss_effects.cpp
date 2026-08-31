@@ -574,25 +574,13 @@ void SSEffects::downsample_depth(Ref<RenderSceneBuffersRD> p_render_buffers, uin
 	}
 
 	Projection correction;
-	correction.set_depth_correction(false);
-	Projection temp = correction * p_projection;
+	correction.set_depth_correction(true);
+	store_camera((correction * p_projection).inverse(), ss_effects.downsample_push_constant.inv_proj);
 
-	float depth_linearize_mul = -temp.columns[3][2];
-	float depth_linearize_add = temp.columns[2][2];
-	if (depth_linearize_mul * depth_linearize_add < 0) {
-		depth_linearize_add = -depth_linearize_add;
-	}
-
-	ss_effects.downsample_push_constant.orthogonal = p_projection.is_orthogonal();
-	ss_effects.downsample_push_constant.z_near = depth_linearize_mul;
-	ss_effects.downsample_push_constant.z_far = depth_linearize_add;
-	if (ss_effects.downsample_push_constant.orthogonal) {
-		ss_effects.downsample_push_constant.z_near = p_projection.get_z_near();
-		ss_effects.downsample_push_constant.z_far = p_projection.get_z_far();
-	}
 	ss_effects.downsample_push_constant.pixel_size[0] = 1.0 / full_screen_size.x;
 	ss_effects.downsample_push_constant.pixel_size[1] = 1.0 / full_screen_size.y;
 	ss_effects.downsample_push_constant.radius_sq = 1.0;
+	ss_effects.downsample_push_constant.pad = 0;
 
 	RID default_sampler = material_storage->sampler_rd_get_default(RSE::CANVAS_ITEM_TEXTURE_FILTER_LINEAR, RSE::CANVAS_ITEM_TEXTURE_REPEAT_DISABLED);
 

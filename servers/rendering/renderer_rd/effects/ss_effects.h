@@ -185,12 +185,10 @@ private:
 	/* SS Downsampler */
 
 	struct SSEffectsDownsamplePushConstant {
+		float inv_proj[16];
 		float pixel_size[2];
-		float z_far;
-		float z_near;
-		uint32_t orthogonal;
 		float radius_sq;
-		uint32_t pad[2];
+		uint32_t pad;
 	};
 
 	enum SSEffectsMode {

@@ -26,12 +26,10 @@
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 layout(push_constant, std430) uniform Params {
+	mat4 inv_proj;
 	vec2 pixel_size;
-	float z_far;
-	float z_near;
-	bool orthogonal;
 	float radius_sq;
-	uvec2 pad;
+	uint pad;
 }
 params;
 
@@ -47,34 +45,9 @@ layout(r16f, set = 2, binding = 3) uniform restrict writeonly image2DArray dest_
 #endif
 #endif
 
-vec4 screen_space_to_view_space_depth(vec4 p_depth) {
-	if (params.orthogonal) {
-		vec4 depth = p_depth * 2.0 - 1.0;
-		return -(depth * (params.z_far - params.z_near) - (params.z_far + params.z_near)) / 2.0;
-	}
-
-	float depth_linearize_mul = params.z_near;
-	float depth_linearize_add = params.z_far;
-
-	// Optimized version of "-cameraClipNear / (cameraClipFar - projDepth * (cameraClipFar - cameraClipNear)) * cameraClipFar"
-
-	// Set your depth_linearize_mul and depth_linearize_add to:
-	// depth_linearize_mul = ( cameraClipFar * cameraClipNear) / ( cameraClipFar - cameraClipNear );
-	// depth_linearize_add = cameraClipFar / ( cameraClipFar - cameraClipNear );
-
-	return depth_linearize_mul / (depth_linearize_add - p_depth);
-}
-
-float screen_space_to_view_space_depth(float p_depth) {
-	if (params.orthogonal) {
-		float depth = p_depth * 2.0 - 1.0;
-		return -(depth * (params.z_far - params.z_near) - (params.z_far + params.z_near)) / 2.0;
-	}
-
-	float depth_linearize_mul = params.z_near;
-	float depth_linearize_add = params.z_far;
-
-	return depth_linearize_mul / (depth_linearize_add - p_depth);
+float screen_space_to_view_space_depth(float p_depth, vec2 p_uv) {
+	vec4 view = params.inv_proj * vec4(p_uv * 2.0 - 1.0, p_depth, 1.0);
+	return abs(view.z / view.w);
 }
 
 #ifdef GENERATE_MIPS
@@ -89,8 +62,11 @@ float mip_smart_average(vec4 p_depths) {
 	return dot(weights, p_depths) / dot(weights, vec4(1.0, 1.0, 1.0, 1.0));
 }
 
-void prepare_depths_and_mips(vec4 p_samples, uvec2 p_output_coord, uvec2 p_gtid) {
-	p_samples = screen_space_to_view_space_depth(p_samples);
+void prepare_depths_and_mips(vec4 p_samples, vec4 p_uv_x, vec4 p_uv_y, uvec2 p_output_coord, uvec2 p_gtid) {
+	p_samples.x = screen_space_to_view_space_depth(p_samples.x, vec2(p_uv_x.x, p_uv_y.x));
+	p_samples.y = screen_space_to_view_space_depth(p_samples.y, vec2(p_uv_x.y, p_uv_y.y));
+	p_samples.z = screen_space_to_view_space_depth(p_samples.z, vec2(p_uv_x.z, p_uv_y.z));
+	p_samples.w = screen_space_to_view_space_depth(p_samples.w, vec2(p_uv_x.w, p_uv_y.w));
 
 	depth_buffer[0][p_gtid.x][p_gtid.y] = p_samples.w;
 	depth_buffer[1][p_gtid.x][p_gtid.y] = p_samples.z;
@@ -171,8 +147,11 @@ void prepare_depths_and_mips(vec4 p_samples, uvec2 p_output_coord, uvec2 p_gtid)
 }
 #else
 #ifndef USE_HALF_BUFFERS
-void prepare_depths(vec4 p_samples, uvec2 p_tid) {
-	p_samples = screen_space_to_view_space_depth(p_samples);
+void prepare_depths(vec4 p_samples, vec4 p_uv_x, vec4 p_uv_y, uvec2 p_tid) {
+	p_samples.x = screen_space_to_view_space_depth(p_samples.x, vec2(p_uv_x.x, p_uv_y.x));
+	p_samples.y = screen_space_to_view_space_depth(p_samples.y, vec2(p_uv_x.y, p_uv_y.y));
+	p_samples.z = screen_space_to_view_space_depth(p_samples.z, vec2(p_uv_x.z, p_uv_y.z));
+	p_samples.w = screen_space_to_view_space_depth(p_samples.w, vec2(p_uv_x.w, p_uv_y.w));
 
 	imageStore(dest_image0, ivec3(p_tid, 0), vec4(p_samples.w));
 	imageStore(dest_image0, ivec3(p_tid, 1), vec4(p_samples.z));
@@ -186,14 +165,16 @@ void main() {
 #ifdef USE_HALF_BUFFERS
 // Half buffers means that we divide depth into two half res buffers (we only capture 1/4 of pixels).
 #ifdef USE_HALF_SIZE
-	float sample_00 = texelFetch(source_depth, ivec2(4 * gl_GlobalInvocationID.x + 0, 4 * gl_GlobalInvocationID.y + 0), 0).x;
-	float sample_11 = texelFetch(source_depth, ivec2(4 * gl_GlobalInvocationID.x + 2, 4 * gl_GlobalInvocationID.y + 2), 0).x;
+	ivec2 coord_00 = ivec2(4 * gl_GlobalInvocationID.x + 0, 4 * gl_GlobalInvocationID.y + 0);
+	ivec2 coord_11 = ivec2(4 * gl_GlobalInvocationID.x + 2, 4 * gl_GlobalInvocationID.y + 2);
 #else
-	float sample_00 = texelFetch(source_depth, ivec2(2 * gl_GlobalInvocationID.x + 0, 2 * gl_GlobalInvocationID.y + 0), 0).x;
-	float sample_11 = texelFetch(source_depth, ivec2(2 * gl_GlobalInvocationID.x + 1, 2 * gl_GlobalInvocationID.y + 1), 0).x;
+	ivec2 coord_00 = ivec2(2 * gl_GlobalInvocationID.x + 0, 2 * gl_GlobalInvocationID.y + 0);
+	ivec2 coord_11 = ivec2(2 * gl_GlobalInvocationID.x + 1, 2 * gl_GlobalInvocationID.y + 1);
 #endif
-	sample_00 = screen_space_to_view_space_depth(sample_00);
-	sample_11 = screen_space_to_view_space_depth(sample_11);
+	float sample_00 = texelFetch(source_depth, coord_00, 0).x;
+	float sample_11 = texelFetch(source_depth, coord_11, 0).x;
+	sample_00 = screen_space_to_view_space_depth(sample_00, (vec2(coord_00) + 0.5) * params.pixel_size);
+	sample_11 = screen_space_to_view_space_depth(sample_11, (vec2(coord_11) + 0.5) * params.pixel_size);
 
 	imageStore(dest_image0, ivec3(gl_GlobalInvocationID.xy, 0), vec4(sample_00));
 	imageStore(dest_image0, ivec3(gl_GlobalInvocationID.xy, 3), vec4(sample_11));
@@ -208,17 +189,21 @@ void main() {
 	samples.y = textureLodOffset(source_depth, uv, 0, ivec2(2, 2)).x;
 	samples.z = textureLodOffset(source_depth, uv, 0, ivec2(2, 0)).x;
 	samples.w = textureLodOffset(source_depth, uv, 0, ivec2(0, 0)).x;
+	vec4 uv_x = uv.x + vec4(0.0, 2.0, 2.0, 0.0) * params.pixel_size.x;
+	vec4 uv_y = uv.y + vec4(2.0, 2.0, 0.0, 0.0) * params.pixel_size.y;
 #else
 	ivec2 depth_buffer_coord = 2 * ivec2(gl_GlobalInvocationID.xy);
 	ivec2 output_coord = ivec2(gl_GlobalInvocationID);
 
 	vec2 uv = (vec2(depth_buffer_coord) + 0.5f) * params.pixel_size;
 	vec4 samples = textureGather(source_depth, uv);
+	vec4 uv_x = uv.x + vec4(0.0, 1.0, 1.0, 0.0) * params.pixel_size.x;
+	vec4 uv_y = uv.y + vec4(1.0, 1.0, 0.0, 0.0) * params.pixel_size.y;
 #endif //USE_HALF_SIZE
 #ifdef GENERATE_MIPS
-	prepare_depths_and_mips(samples, output_coord, gl_LocalInvocationID.xy);
+	prepare_depths_and_mips(samples, uv_x, uv_y, output_coord, gl_LocalInvocationID.xy);
 #else
-	prepare_depths(samples, gl_GlobalInvocationID.xy);
+	prepare_depths(samples, uv_x, uv_y, gl_GlobalInvocationID.xy);
 #endif
 #endif //USE_HALF_BUFFERS
 }

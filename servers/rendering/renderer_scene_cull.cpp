@@ -3543,7 +3543,7 @@ void RendererSceneCull::_render_scene(const RendererSceneRender::CameraData *p_c
 
 			{ //compute coverage
 
-				Transform3D cam_xf = p_camera_data->shadow_projection;
+				Transform3D cam_xf = p_camera_data->main_transform;
 				float zn = p_camera_data->shadow_projection.get_z_near();
 				Plane p(-cam_xf.basis.get_column(2), cam_xf.origin + cam_xf.basis.get_column(2) * -zn); //camera near plane
 
