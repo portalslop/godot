@@ -41,12 +41,6 @@ vec2 compute_cell_count(int level) {
 	return vec2(cell_count_x, cell_count_y);
 }
 
-float linearize_depth(float depth) {
-	vec4 pos = vec4(0.0, 0.0, depth, 1.0);
-	pos = scene_data.inv_projection[params.view_index] * pos;
-	return pos.z / pos.w;
-}
-
 vec3 compute_view_pos(vec3 screen_pos) {
 	vec4 pos;
 	pos.xy = screen_pos.xy * 2.0 - 1.0;
@@ -198,8 +192,8 @@ void main() {
 			int mip_offset = hit ? -1 : +1;
 
 			if (cur_level == 0) {
-				float z0 = linearize_depth(cell_depth);
-				float z1 = linearize_depth(cur_screen_pos.z);
+				float z0 = compute_view_pos(vec3((cell_index + 0.5) / cell_count, cell_depth)).z;
+				float z1 = compute_view_pos(cur_screen_pos).z;
 
 				if ((z0 - z1) > params.depth_tolerance) {
 					hit = false;

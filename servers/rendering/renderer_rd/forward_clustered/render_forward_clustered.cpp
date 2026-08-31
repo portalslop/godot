@@ -951,8 +951,8 @@ void RenderForwardClustered::_fill_render_list(RenderListType p_render_list, con
 	uint32_t lightmap_captures_used = 0;
 
 	Plane near_plane = Plane(-p_render_data->scene_data->cam_transform.basis.get_column(Vector3::AXIS_Z), p_render_data->scene_data->cam_transform.origin);
-	near_plane.d += p_render_data->scene_data->cam_projection.get_z_near();
-	float z_max = p_render_data->scene_data->cam_projection.get_z_far() - p_render_data->scene_data->cam_projection.get_z_near();
+	near_plane.d += p_render_data->scene_data->shadow_projection.get_z_near();
+	float z_max = p_render_data->scene_data->shadow_projection.get_z_far() - p_render_data->scene_data->shadow_projection.get_z_near();
 
 	RenderList *rl = &render_list[p_render_list];
 	_update_dirty_geometry_instances();
@@ -1676,7 +1676,7 @@ void RenderForwardClustered::_pre_opaque_render(RenderDataRD *p_render_data, boo
 		// This only works as we don't filter our cluster by depth buffer.
 		// If we ever make this optimization we should make it optional and only use it in mono.
 		// What we win by filtering out a few lights, we loose by having to do the work double for stereo.
-		current_cluster_builder->begin(p_render_data->scene_data->cam_transform, p_render_data->scene_data->cam_projection, !p_render_data->reflection_probe.is_valid());
+		current_cluster_builder->begin(p_render_data->scene_data->cam_transform, p_render_data->scene_data->shadow_projection, !p_render_data->reflection_probe.is_valid());
 	}
 
 	bool using_shadows = true;
@@ -1704,7 +1704,7 @@ void RenderForwardClustered::_pre_opaque_render(RenderDataRD *p_render_data, boo
 	if (rb_data.is_valid()) {
 		RENDER_TIMESTAMP("Update Volumetric Fog");
 		bool directional_shadows = RendererRD::LightStorage::get_singleton()->has_directional_shadows(directional_light_count);
-		_update_volumetric_fog(rb, p_render_data->environment, p_render_data->scene_data->cam_projection, p_render_data->scene_data->cam_transform, p_render_data->scene_data->prev_cam_transform.affine_inverse(), p_render_data->shadow_atlas, directional_light_count, directional_shadows, positional_light_count, p_render_data->voxel_gi_count, *p_render_data->fog_volumes);
+		_update_volumetric_fog(rb, p_render_data->environment, p_render_data->scene_data->shadow_projection, p_render_data->scene_data->cam_transform, p_render_data->scene_data->prev_cam_transform.affine_inverse(), p_render_data->shadow_atlas, directional_light_count, directional_shadows, positional_light_count, p_render_data->voxel_gi_count, *p_render_data->fog_volumes);
 	}
 }
 
@@ -2836,6 +2836,7 @@ void RenderForwardClustered::_render_shadow_append(RID p_framebuffer, const Page
 	RenderSceneDataRD scene_data;
 	scene_data.flip_y = !p_flip_y; // Q: Why is this inverted? Do we assume flip in shadow logic?
 	scene_data.cam_projection = p_projection;
+	scene_data.shadow_projection = p_projection;
 	scene_data.cam_transform = p_transform;
 	scene_data.view_projection[0] = p_projection;
 	scene_data.z_far = p_zfar;
@@ -2941,6 +2942,7 @@ void RenderForwardClustered::_render_particle_collider_heightfield(RID p_fb, con
 	RenderSceneDataRD scene_data;
 	scene_data.flip_y = true;
 	scene_data.cam_projection = p_cam_projection;
+	scene_data.shadow_projection = p_cam_projection;
 	scene_data.cam_transform = p_cam_transform;
 	scene_data.view_projection[0] = p_cam_projection;
 	scene_data.z_near = 0.0;
@@ -2988,6 +2990,7 @@ void RenderForwardClustered::_render_material(const Transform3D &p_cam_transform
 
 	RenderSceneDataRD scene_data;
 	scene_data.cam_projection = p_cam_projection;
+	scene_data.shadow_projection = p_cam_projection;
 	scene_data.cam_transform = p_cam_transform;
 	scene_data.view_projection[0] = p_cam_projection;
 	scene_data.dual_paraboloid_side = 0;
@@ -3179,6 +3182,7 @@ void RenderForwardClustered::_render_sdfgi(Ref<RenderSceneBuffersRD> p_render_bu
 		float v_size = half_size[up_axis];
 		float d_size = half_size[i] * 2.0;
 		scene_data.cam_projection.set_orthogonal(-h_size, h_size, -v_size, v_size, 0, d_size);
+		scene_data.shadow_projection = scene_data.cam_projection;
 		//print_line("pass: " + itos(i) + " cam hsize: " + rtos(h_size) + " vsize: " + rtos(v_size) + " dsize " + rtos(d_size));
 
 		Transform3D to_bounds;

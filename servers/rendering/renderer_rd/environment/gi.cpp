@@ -4067,9 +4067,7 @@ void GI::process_gi(Ref<RenderSceneBuffersRD> p_render_buffers, const RID *p_nor
 	if (rbgi->using_half_size_gi) {
 		pipeline_specialization |= SHADER_SPECIALIZATION_HALF_RES;
 	}
-	if (p_view_count > 1) {
-		pipeline_specialization |= SHADER_SPECIALIZATION_USE_FULL_PROJECTION_MATRIX;
-	}
+	pipeline_specialization |= SHADER_SPECIALIZATION_USE_FULL_PROJECTION_MATRIX;
 	bool has_vrs_texture = p_render_buffers->has_texture(RB_SCOPE_VRS, RB_TEXTURE);
 	if (has_vrs_texture) {
 		pipeline_specialization |= SHADER_SPECIALIZATION_USE_VRS;

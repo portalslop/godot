@@ -1,9 +1,7 @@
 layout(push_constant, std430) uniform Params {
+	vec4 inv_proj_z;
+	vec4 inv_proj_w;
 	ivec2 size;
-	float z_far;
-	float z_near;
-
-	bool orthogonal;
 	float blur_size;
 	float blur_scale;
 	int blur_steps;

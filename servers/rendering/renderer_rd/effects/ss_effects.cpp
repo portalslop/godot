@@ -1752,8 +1752,9 @@ void SSEffects::sub_surface_scattering(Ref<RenderSceneBuffersRD> p_render_buffer
 	{ //scale color and depth to half
 		RD::ComputeListID compute_list = RD::get_singleton()->compute_list_begin();
 
-		sss.push_constant.camera_z_far = p_camera.get_z_far();
-		sss.push_constant.camera_z_near = p_camera.get_z_near();
+		Projection correction;
+		correction.set_depth_correction(true);
+		store_camera((correction * p_camera).inverse(), sss.push_constant.inv_proj);
 		sss.push_constant.orthogonal = p_camera.is_orthogonal();
 		sss.push_constant.unit_size = unit_size;
 		sss.push_constant.screen_size[0] = p_screen_size.x;

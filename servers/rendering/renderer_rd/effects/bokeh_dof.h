@@ -30,6 +30,7 @@
 
 #pragma once
 
+#include "core/math/projection.h"
 #include "servers/rendering/renderer_rd/pipeline_cache_rd.h"
 #include "servers/rendering/renderer_rd/pipeline_deferred_rd.h"
 #include "servers/rendering/renderer_rd/shaders/effects/bokeh_dof.glsl.gen.h"
@@ -42,11 +43,9 @@ private:
 	bool prefer_raster_effects;
 
 	struct BokehPushConstant {
+		float inv_proj_z[4];
+		float inv_proj_w[4];
 		uint32_t size[2];
-		float z_far;
-		float z_near;
-
-		uint32_t orthogonal;
 		float blur_size;
 		float blur_scale;
 		uint32_t steps;
@@ -113,8 +112,8 @@ public:
 	BokehDOF(bool p_prefer_raster_effects);
 	~BokehDOF();
 
-	void bokeh_dof_compute(const BokehBuffers &p_buffers, RID p_camera_attributes, float p_cam_znear, float p_cam_zfar, bool p_cam_orthogonal);
-	void bokeh_dof_raster(const BokehBuffers &p_buffers, RID p_camera_attributes, float p_cam_znear, float p_cam_zfar, bool p_cam_orthogonal);
+	void bokeh_dof_compute(const BokehBuffers &p_buffers, RID p_camera_attributes, const Projection &p_cam_projection);
+	void bokeh_dof_raster(const BokehBuffers &p_buffers, RID p_camera_attributes, const Projection &p_cam_projection);
 };
 
 } // namespace RendererRD

@@ -44,6 +44,7 @@ public:
 
 	Transform3D cam_transform;
 	Projection cam_projection;
+	Projection shadow_projection;
 	Vector2 taa_jitter;
 	float taa_frame_count = 0.0f;
 	uint32_t camera_visible_layers;

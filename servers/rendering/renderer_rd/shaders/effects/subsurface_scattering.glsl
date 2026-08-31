@@ -88,10 +88,8 @@ const vec4 skin_kernel[kernel_size] = vec4[](
 #endif //USE_11_SAMPLES
 
 layout(push_constant, std430) uniform Params {
+	mat4 inv_proj;
 	ivec2 screen_size;
-	float camera_z_far;
-	float camera_z_near;
-
 	bool vertical;
 	bool orthogonal;
 	float unit_size;
@@ -148,15 +146,14 @@ void main() {
 		vec2 dir = params.vertical ? vec2(0.0, 1.0) : vec2(1.0, 0.0);
 
 		// Fetch linear depth of current pixel:
-		float depth = texture(source_depth, uv).r * 2.0 - 1.0;
+		float depth = texture(source_depth, uv).r;
 		float depth_scale;
 
 		if (params.orthogonal) {
-			depth = -(depth * (params.camera_z_far - params.camera_z_near) - (params.camera_z_far + params.camera_z_near)) / 2.0;
 			depth_scale = params.unit_size; //remember depth is negative by default in OpenGL
 		} else {
-			depth = 2.0 * params.camera_z_near * params.camera_z_far / (params.camera_z_far + params.camera_z_near + depth * (params.camera_z_far - params.camera_z_near));
-			depth_scale = params.unit_size / depth; //remember depth is negative by default in OpenGL
+			vec4 view = params.inv_proj * vec4(uv * 2.0 - 1.0, depth, 1.0);
+			depth_scale = params.unit_size / abs(view.z / view.w); //remember depth is negative by default in OpenGL
 		}
 
 		float scale = mix(params.scale, depth_scale, params.depth_scale);

@@ -505,10 +505,8 @@ private:
 	};
 
 	struct SubSurfaceScatteringPushConstant {
+		float inv_proj[16];
 		int32_t screen_size[2];
-		float camera_z_far;
-		float camera_z_near;
-
 		uint32_t vertical;
 		uint32_t orthogonal;
 		float unit_size;

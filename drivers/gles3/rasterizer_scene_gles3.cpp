@@ -2461,8 +2461,8 @@ void RasterizerSceneGLES3::render_scene(const Ref<RenderSceneBuffers> &p_render_
 			render_data.view_projection[v] = p_camera_data->view_projection[v];
 		}
 
-		render_data.z_near = p_camera_data->main_projection.get_z_near();
-		render_data.z_far = p_camera_data->main_projection.get_z_far();
+		render_data.z_near = p_camera_data->shadow_projection.get_z_near();
+		render_data.z_far = p_camera_data->shadow_projection.get_z_far();
 
 		render_data.instances = &p_instances;
 		render_data.lights = &p_lights;
