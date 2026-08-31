@@ -96,13 +96,11 @@ void RendererSceneCull::camera_set_perspective(RID p_camera, float p_fovy_degree
 	camera->zfar = p_z_far;
 }
 
-void RendererSceneCull::camera_set_oblique_plane(RID p_camera, bool p_use_oblique_frustum, const Vector3 &p_ob_normal, const Vector3 &p_ob_position, float p_ob_offset) {
+void RendererSceneCull::camera_set_near_clip_plane(RID p_camera, const Vector3 &p_normal, const Vector3 &p_position) {
 	Camera *camera = camera_owner.get_or_null(p_camera);
 	ERR_FAIL_NULL(camera);
-	camera->use_oblique_frustum = p_use_oblique_frustum;
-	camera->oblique_normal = p_ob_normal;
-	camera->oblique_position = p_ob_position;
-	camera->oblique_offset = p_ob_offset;
+	camera->near_plane_normal = p_normal;
+	camera->near_plane_position = p_position;
 }
 
 void RendererSceneCull::camera_set_orthogonal(RID p_camera, float p_size, float p_z_near, float p_z_far) {
@@ -166,14 +164,14 @@ bool RendererSceneCull::is_camera(RID p_camera) const {
 	return camera_owner.owns(p_camera);
 }
 
-Vector4 RendererSceneCull::get_camera_oblique_plane(RID p_camera) {
+Vector4 RendererSceneCull::get_camera_near_clip_plane(RID p_camera) {
 	Camera *camera = camera_owner.get_or_null(p_camera);
 	ERR_FAIL_NULL_V(camera, Vector4());
 
-	int dot = int(camera->oblique_normal.dot(camera->oblique_position - camera->transform.origin) >= 0.0f ? 1.0f : -1.0f);
-	Vector3 cam_space_pos = camera->transform.xform_inv(camera->oblique_position);
-	Vector3 cam_space_normal = camera->transform.basis.xform_inv(camera->oblique_normal) * dot;
-	real_t cam_space_dst = -cam_space_pos.dot(cam_space_normal) + camera->oblique_offset;
+	int dot = int(camera->near_plane_normal.dot(camera->near_plane_position - camera->transform.origin) >= 0.0f ? 1.0f : -1.0f);
+	Vector3 cam_space_pos = camera->transform.xform_inv(camera->near_plane_position);
+	Vector3 cam_space_normal = camera->transform.basis.xform_inv(camera->near_plane_normal) * dot;
+	real_t cam_space_dst = -cam_space_pos.dot(cam_space_normal) + camera->znear;
 
 	return Vector4(cam_space_normal.x, cam_space_normal.y, cam_space_normal.z, cam_space_dst);
 }
@@ -2760,8 +2758,8 @@ void RendererSceneCull::render_camera(const Ref<RenderSceneBuffers> &p_render_bu
 		}
 
 		shadow_projection = main_projection;
-		if (camera->use_oblique_frustum) {
-			main_projection.apply_oblique_plane(get_camera_oblique_plane(p_camera));
+		if (!camera->near_plane_normal.is_zero_approx()) {
+			main_projection.apply_near_plane(get_camera_near_clip_plane(p_camera));
 		}
 		camera_data.set_camera(transform, main_projection, shadow_projection, is_orthogonal, vaspect, jitter, camera->visible_layers);
 #ifndef XR_DISABLED

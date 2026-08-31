@@ -122,11 +122,11 @@
 				Sets the camera projection to frustum mode (see [constant PROJECTION_FRUSTUM]), by specifying a [param size], an [param offset], and the [param z_near] and [param z_far] clip planes in world space units. The [param size] parameter represents the size of the near plane, either its width or height depending on the value of [member keep_aspect]. See also [member frustum_offset].
 			</description>
 		</method>
-		<method name="set_oblique_plane_from_transform">
+		<method name="set_near_plane_from_transform">
 			<return type="void" />
-			<param index="0" name="oblique_transform" type="Transform3D" />
+			<param index="0" name="near_plane_transform" type="Transform3D" />
 			<description>
-				Sets the [member oblique_normal] and [member oblique_position] values of this camera, through the given [param oblique_transform]'s origin and forward vector. Can be useful for plane meshes used as portals or mirrors. See also [member use_oblique_frustum].
+				Sets [member near_plane_normal] and [member near_plane_position] from the given transform's origin and forward vector.
 			</description>
 		</method>
 		<method name="set_orthogonal">
@@ -210,25 +210,19 @@
 		</member>
 		<member name="near" type="float" setter="set_near" getter="get_near" default="0.05">
 			The distance to the near culling boundary for this camera relative to its local Z axis. Lower values allow the camera to see objects more up close to its origin, at the cost of lower precision across the [i]entire[/i] range. Values lower than the default can lead to increased Z-fighting.
+			If [member near_plane_normal] is set, this is instead an offset of the custom near clip plane along its normal.
 		</member>
-		<member name="oblique_normal" type="Vector3" setter="set_oblique_normal" getter="get_oblique_normal" default="Vector3(0, 1, 0)">
-			The desired normal vector of the world space plane used by an oblique camera as an oblique near clipping plane.
+		<member name="near_plane_normal" type="Vector3" setter="set_near_plane_normal" getter="get_near_plane_normal" default="Vector3(0, 0, 0)">
+			World-space normal of a custom near clip plane. If this is [constant Vector3.ZERO], the camera uses [member near].
 		</member>
-		<member name="oblique_offset" type="float" setter="set_oblique_offset" getter="get_oblique_offset" default="0.0">
-			The offset value for the oblique plane along its forward vector.
+		<member name="near_plane_position" type="Vector3" setter="set_near_plane_position" getter="get_near_plane_position" default="Vector3(0, 0, 0)">
+			World-space point on the custom near clip plane. [member near] offsets this plane along [member near_plane_normal].
 		</member>
-		<member name="oblique_position" type="Vector3" setter="set_oblique_position" getter="get_oblique_position" default="Vector3(0, 0, 0)">
-			The world space position of the plane used by an oblique camera as an oblique near clipping plane.
-		</member>
- 		<member name="projection" type="int" setter="set_projection" getter="get_projection" enum="Camera3D.ProjectionType" default="0">
 		<member name="projection" type="int" setter="set_projection" getter="get_projection" enum="Camera3D.ProjectionType" default="0">
 			The camera's projection mode. In [constant PROJECTION_PERSPECTIVE] mode, objects' Z distance from the camera's local space scales their perceived size.
 		</member>
 		<member name="size" type="float" setter="set_size" getter="get_size" default="1.0">
 			The camera's size in meters measured as the diameter of the width or height, depending on [member keep_aspect]. Only applicable in orthogonal and frustum modes.
-		</member>
-		<member name="use_oblique_frustum" type="bool" setter="set_use_oblique_frustum" getter="get_use_oblique_frustum" default="false">
-			If [code]true[/code], enables oblique near plane frustum culling.
 		</member>
 		<member name="v_offset" type="float" setter="set_v_offset" getter="get_v_offset" default="0.0">
 			The vertical (Y) offset of the camera viewport.
