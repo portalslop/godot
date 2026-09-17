@@ -2859,6 +2859,9 @@ void RenderingServer::_bind_methods() {
 	/* VIEWPORT */
 
 	ClassDB::bind_method(D_METHOD("viewport_create"), &RenderingServer::viewport_create);
+
+	ClassDB::bind_method(D_METHOD("draw_viewport", "viewport", "swap_buffers"), &RenderingServer::draw_viewport, DEFVAL(true));
+
 #ifndef XR_DISABLED
 	ClassDB::bind_method(D_METHOD("viewport_set_use_xr", "viewport", "use_xr"), &RenderingServer::viewport_set_use_xr);
 #endif // XR_DISABLED

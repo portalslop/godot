@@ -743,6 +743,8 @@ public:
 
 	FUNCRIDSPLIT(viewport)
 
+	FUNC2(draw_viewport, RID, bool)
+
 #ifndef XR_DISABLED
 	FUNC2(viewport_set_use_xr, RID, bool)
 #endif // XR_DISABLED

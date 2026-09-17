@@ -335,6 +335,45 @@ void RendererViewport::_draw_3d(Viewport *p_viewport) {
 #endif // _3D_DISABLED
 }
 
+void RendererViewport::draw_viewport(RID p_viewport, bool p_swap_buffers) {
+	Viewport *viewport = viewport_owner.get_or_null(p_viewport);
+	ERR_FAIL_NULL(viewport);
+	ERR_FAIL_COND_MSG(viewport->use_xr, "Cannot render viewport with XR enabled.");
+
+	HashMap<DisplayServerEnums::WindowID, Vector<RenderingServerTypes::BlitToScreen>> blit_to_screen_list;
+
+	RSG::texture_storage->render_target_set_as_unused(viewport->render_target);
+	RSG::scene->set_debug_draw_mode(viewport->debug_draw);
+
+	// render standard mono camera
+	_draw_viewport(viewport);
+
+	if (viewport->viewport_to_screen != DisplayServerEnums::INVALID_WINDOW_ID && (!viewport->viewport_render_direct_to_screen || !RSG::rasterizer->is_low_end())) {
+		//copy to screen if set as such
+		RenderingServerTypes::BlitToScreen blit;
+		blit.render_target = viewport->render_target;
+		if (viewport->viewport_to_screen_rect != Rect2()) {
+			blit.dst_rect = viewport->viewport_to_screen_rect;
+		} else {
+			blit.dst_rect.position = Vector2();
+			blit.dst_rect.size = viewport->size;
+		}
+
+		if (RSG::rasterizer->is_opengl()) {
+			RSG::rasterizer->blit_render_targets_to_screen(viewport->viewport_to_screen, &blit, 1);
+			RSG::rasterizer->gl_end_frame(p_swap_buffers);
+		} else {
+			Vector<RenderingServerTypes::BlitToScreen> *blits = blit_to_screen_list.getptr(viewport->viewport_to_screen);
+			if (blits == nullptr) {
+				blits = &blit_to_screen_list.insert(viewport->viewport_to_screen, Vector<RenderingServerTypes::BlitToScreen>())->value;
+			}
+			blits->push_back(blit);
+		}
+	}
+
+	RSG::scene->set_debug_draw_mode(RSE::VIEWPORT_DEBUG_DRAW_DISABLED);
+}
+
 void RendererViewport::_draw_viewport(Viewport *p_viewport) {
 	if (p_viewport->measure_render_time) {
 		String rt_id = "vp_begin_" + itos(p_viewport->self.get_id());

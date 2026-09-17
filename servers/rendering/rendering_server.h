@@ -547,6 +547,8 @@ public:
 
 	virtual RID viewport_create() = 0;
 
+	virtual void draw_viewport(RID p_viewport, bool p_swap_buffers) = 0;
+
 #ifndef XR_DISABLED
 	virtual void viewport_set_use_xr(RID p_viewport, bool p_use_xr) = 0;
 #endif // !XR_DISABLED

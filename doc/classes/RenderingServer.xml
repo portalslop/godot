@@ -4542,6 +4542,14 @@
 				If [code]true[/code], use temporal antialiasing. Equivalent to [member ProjectSettings.rendering/anti_aliasing/quality/use_taa] or [member Viewport.use_taa].
 			</description>
 		</method>
+		<method name="draw_viewport">
+			<return type="void" />
+			<param index="0" name="viewport" type="RID" />
+			<param index="1" name="swap_buffers" type="bool" default="true" />
+			<description>
+				Forces redrawing of specified viewport. Must be called from the main thread.
+			</description>
+		</method>
 		<method name="viewport_set_use_xr">
 			<return type="void" />
 			<param index="0" name="viewport" type="RID" />
